@@ -12,29 +12,22 @@ if (!sequelize) {
 const InitiativeMember = sequelize.define("InitiativeMember", {
     // primary key
     initiative_member_id:{
-        type:Sequelize.DataTypes.INTEGER,
-        autoIncrement:true,
-        primaryKey:true
+        type : Sequelize.DataTypes.UUID,
+        defaultValue :Sequelize.UUIDV4,
+        primaryKey : true
     },
     initiative_id:{
-        type:Sequelize.DataTypes.INTEGER,
+        type:Sequelize.DataTypes.UUID,
         allowNull : false
     },
     user_id:{
-        type:Sequelize.DataTypes.INTEGER,
+        type:Sequelize.DataTypes.UUID,
         allowNull: false
-    },
-    Created_at : {
-        type:Sequelize.DataTypes.DATE,
-        allowNull: false,
-        defaultValue : Date.now()
-    },
-    Updated_at : {
-        type:Sequelize.DataTypes.DATE,
-        allowNull: false,
-        defaultValue : Date.now()
     }
-    
+},{
+    timestamps: true,
+    createdAt: 'created_at',
+    updatedAt: 'updated_at'
 })
 
 module.exports = InitiativeMember;

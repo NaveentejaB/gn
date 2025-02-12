@@ -13,17 +13,13 @@ if (!sequelize) {
 const Location = sequelize.define("Location", {
     // primary key
     location_id:{
-        type:Sequelize.DataTypes.INTEGER,
-        autoIncrement:true,
-        primaryKey:true
+        type : Sequelize.DataTypes.UUID,
+        defaultValue :Sequelize.UUIDV4,
+        primaryKey : true
     },
     lattiude : {
         type:Sequelize.DataTypes.STRING,
         allowNull: false 
-    },
-    initiative_id : {
-        type:Sequelize.DataTypes.INTEGER,
-        allowNull : false
     },
     longitude : {
         type:Sequelize.DataTypes.STRING,
@@ -32,12 +28,10 @@ const Location = sequelize.define("Location", {
     location_town : {
         type:Sequelize.DataTypes.STRING,
         allowNull: false 
-    },
-    Created_at : {
-        type:Sequelize.DataTypes.DATE,
-        allowNull: false,
-        defaultValue : Date.now()
-    }, 
+    }
+},{
+    timestamps: true,
+    createdAt: 'created_at',
 })
 
 module.exports = Location;

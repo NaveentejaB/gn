@@ -1,45 +1,53 @@
 const express = require("express");
 const { connectDB, disconnectDB, sequelize } = require("../src/config/DB");
 const winston = require('winston');
-const authRoutes = require('./routes/auth-routes')
+const authRoutes = require('./routes/auth-routes');
+const redisQueue = require('./utils/redisQueue');
+const cors = require('cors');
+require('express-async-errors');
 const BASE_PORT = 3003;
 
 
 // Configure Winston
-const logger = winston.createLogger({
-  level: 'info',
-  format: winston.format.combine(
-    winston.format.timestamp(),
-    winston.format.printf(({ level, message, timestamp, stack }) => {
-      return `${timestamp} ${level}: ${message}${stack ? '\n' + stack : ''}`;
-    })
-  ),
-  transports: [
-    new winston.transports.Console(),
-    new winston.transports.File({ filename: 'error.log', level: 'error' }),
-    new winston.transports.File({ filename: 'combined.log' })
-  ]
-});
+// const console = winston.createconsole({
+//   level: 'info',
+//   format: winston.format.combine(
+//     winston.format.timestamp(),
+//     winston.format.printf(({ level, message, timestamp, stack }) => {
+//       return `${timestamp} ${level}: ${message}${stack ? '\n' + stack : ''}`;
+//     })
+//   ),
+//   transports: [
+//     new winston.transports.Console(),
+//   ]
+// });
+const corsOptions = {
+  origin: '*', // Update with your frontend's URL
+  methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+  credentials: true, // Enable CORS credentials (cookies, authorization headers, etc.)
+  allowedHeaders: 'Content-Type,Authorization',
+};
 
 class App {
   constructor() {
     this.app = express();
+
   }
 
   async initialize() {
     try {
       await connectDB();
       await sequelize.sync();
+      await redisQueue.Intialise();
       this.setMiddlewares();
       this.setRoutes();
-
       this.app.get("/test", (req, res) => {
-        res.send("Hello, This is Initiative service!");
+        res.send("Hello, This is Auth service!");
       });
 
-      logger.info('App initialized successfully');
+      console.log('App initialized successfully');
     } catch (error) {
-      logger.error('Failed to initialize app:', error);
+      console.error('Failed to initialize app:', error);
       process.exit(1);
     }
   }
@@ -49,6 +57,14 @@ class App {
   setMiddlewares() {
     this.app.use(express.json());
     this.app.use(express.urlencoded({ extended: false }));
+    this.app.use(cors(corsOptions));
+    this.app.use((err, req, res, next) => {
+      console.log(err)
+      return res.status(err.status || 500).json({
+          message : `Internal server error!`,
+          success : false
+      })
+    })
   }
 
   setRoutes() {
@@ -58,10 +74,10 @@ class App {
   async start() {
       try {
         this.server = this.app.listen(BASE_PORT, () => {
-          logger.info(`Server successfully started on port ${BASE_PORT}`);
+          console.log(`Server successfully started on port ${BASE_PORT}`);
         });
       } catch (error) {
-        logger.warn(`Failed to start on port ${BASE_PORT}:`, error);
+        console.warn(`Failed to start on port ${BASE_PORT}:`, error);
       }
     
   }
@@ -71,27 +87,27 @@ class App {
       await disconnectDB();
       if (this.server) {
         this.server.close(() => {
-          logger.info('Server stopped');
+          console.log('Server stopped');
           process.exit(0);
         });
       } else {
-        logger.info('Server was not running');
+        console.log('Server was not running');
         process.exit(0);
       }
     } catch (error) {
-      logger.error('Error during server shutdown:', error);
+      console.error('Error during server shutdown:', error);
       process.exit(1);
     }
   }
 }
 
 process.on('SIGINT', () => {
-  logger.info('Received SIGINT. Shutting down gracefully.');
+  console.log('Received SIGINT. Shutting down gracefully.');
   new App().stop();
 });
 
 process.on('SIGTERM', () => {
-  logger.info('Received SIGTERM. Shutting down gracefully.');
+  console.log('Received SIGTERM. Shutting down gracefully.');
   new App().stop();
 });
 

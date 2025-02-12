@@ -10,11 +10,10 @@ if (!sequelize) {
   }
 
 const PhoneOtp = sequelize.define("PhoneOtp", {
-    // primary key
-    user_id:{
-        type:Sequelize.DataTypes.INTEGER,
-        autoIncrement:true,
-        primaryKey:true
+    phone_otp_id:{
+        type : Sequelize.DataTypes.UUID,
+        defaultValue :Sequelize.UUIDV4,
+        primaryKey : true
     },
     user_phone:{
         type:Sequelize.DataTypes.STRING,
@@ -26,15 +25,25 @@ const PhoneOtp = sequelize.define("PhoneOtp", {
     } 
     },{
         hooks: {
-            afterCreate: (user, options) => {
-                setTimeout(async () => {
+            afterCreate: (instance) => {
+                // Set a timeout to delete the specific instance after 60 seconds
+                const deletionTimeout = setTimeout(async () => {
                     try {
-                        await user.destroy();
-                        console.log(`User ${user.user_id} automatically deleted after 60 seconds.`);
+                    await instance.destroy();
+                    console.log(`OTP for ${instance.user_phone} automatically deleted after 60 seconds.`);
                     } catch (error) {
-                        console.error(`Error deleting user ${user.user_id}:`, error);
+                    console.error(`Error deleting OTP for ${instance.user_phone}:`, error);
                     }
                 }, 60000); // 60000 milliseconds = 60 seconds
+        
+                // Attach the timeout to the instance for potential later cleanup
+                instance.deletionTimeout = deletionTimeout;
+            },
+                // Add a beforeDestroy hook to clear the timeout if the instance is manually destroyed
+                beforeDestroy: (instance) => {
+                if (instance.deletionTimeout) {
+                    clearTimeout(instance.deletionTimeout);
+                }
             }
         }
 })

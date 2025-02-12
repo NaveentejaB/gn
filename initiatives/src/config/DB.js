@@ -3,7 +3,13 @@ require('dotenv').config()
 const { Sequelize } = require('sequelize-cockroachdb');
 const winston = require('winston');
 
-let sequelize = new Sequelize(process.env.cockroachDBURL, { logging: false });
+let sequelize = new Sequelize(process.env.cockroachDBURL, { 
+  logging: false,
+  timezone: '+05:30', // India timezone
+  dialectOptions: {
+    timezone: '+05:30'
+  } 
+});
 
 
 async function connectDB() {

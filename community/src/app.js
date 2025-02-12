@@ -60,8 +60,6 @@ class App {
 
   async start() {
       try {
-
-
           this.server = this.app.listen(BASE_PORT, () => {
             logger.info(`Server successfully started on port ${BASE_PORT}`);
           });

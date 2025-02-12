@@ -1,28 +1,33 @@
 const express = require("express");
 const {connectDB,disconnectDB,sequelize} = require("../src/config/DB")
 const winston = require('winston');
-const userRoutes = require("../src/routes/user-routes")
-const port = 3000
-const isPortAvailable = require('is-port-available')
-const RabbitMQClient = require('./utils/rabbitMQ')
-const MailingService = require('./services/mailing-service')
-const EmailSender = require('./utils/mail-util')
+const BASE_PORT = 3002
+const ConsumersSetup = require('../src/workers/index')
+
+// Configure Winston
+const logger = winston.createLogger({
+  level: 'info',
+  format: winston.format.combine(
+    winston.format.timestamp(),
+    winston.format.printf(({ level, message, timestamp, stack }) => {
+      return `${timestamp} ${level}: ${message}${stack ? '\n' + stack : ''}`;
+    })
+  ),
+  transports: [
+    new winston.transports.Console(),
+    // new winston.transports.File({ filename: 'error.log', level: 'error' }),
+    // new winston.transports.File({ filename: 'combined.log' })
+  ]
+});
 
 class App {
   constructor() {
     this.app = express();
-    this.initialize();
-    this.rabbitMQClient = new RabbitMQClient();
-    this.emailService = new EmailSender({
-      service : process.env.MAIL_HOST,
-      // host:process.env.MAIL_HOST,  //-> Host SMTP detail
-          auth:{
-              user: process.env.MAIL_USER,  //-> User's mail for authentication
-              pass: process.env.MAIL_PASS,  //-> User's password for authentication
-          }
-    });
-
-    this.notificationService = new MailingService(this.rabbitMQClient, this.emailService);
+    // this.ConsumersSetup = new ConsumersSetup();
+  }
+  async startConsumers(){
+    const consumerSetup = new ConsumersSetup();
+    await consumerSetup.startMessageBrokers();
   }
 
   async initialize(){
@@ -31,57 +36,65 @@ class App {
       await sequelize.sync();
       this.setMiddlewares();
       this.setRoutes();
-      this.start();
-      this.app.get("/", (req, res) => {
-        res.send("Hello, World!");
+      this.startConsumers();
+      // await this.ConsumersSetup.startMessageBrokers();
+
+      this.app.get("/test", (req, res) => {
+        res.send("Hello, this is notification service");
       });
-      
-    }catch(error){
-      winston.error('Failed to initialize app:', error);
+      logger.info('App initialized successfully');
+    } catch (error) {
+      logger.error('Failed to initialize app:', error);
       process.exit(1);
     }
   }
+
   setMiddlewares() {
     this.app.use(express.json());
     this.app.use(express.urlencoded({ extended: false }));
   }
 
   setRoutes() {
-    this.app.use('/',userRoutes);
+    // this.app.use('/',userRoutes);
   }
 
   async start() {
-    let availablePort = port;
-    while (!await isPortAvailable(availablePort)) {
-      availablePort++;
+    try {
+      this.server = this.app.listen(BASE_PORT, () => {
+        logger.info(`Server successfully started on port ${BASE_PORT}`);
+      });
+    } catch (error) {
+      logger.warn(`Failed to start on port ${BASE_PORT}:`, error);
     }
-
-    this.server = this.app.listen(availablePort, (e) => {
-      if (e) {
-        console.error("Error starting server:", e);
-        winston.error("Error starting server:", e);
-        process.exit(1);
-      } else {
-        winston.info(`Server started on port ${availablePort}`);
-      }
-    });
-
-    process.on('SIGINT', () => this.stop());
-    process.on('SIGTERM', () => this.stop());
   }
 
   async stop() {
     try {
       await disconnectDB();
-      this.server.close(() => {
-        winston.info('Server stopped');
+      if (this.server) {
+        this.server.close(() => {
+          logger.info('Server stopped');
+          process.exit(0);
+        });
+      } else {
+        logger.info('Server was not running');
         process.exit(0);
-      });
+      }
     } catch (error) {
-      winston.error('Error during server shutdown:', error);
+      logger.error('Error during server shutdown:', error);
       process.exit(1);
     }
   }
 }
+
+process.on('SIGINT', () => {
+  logger.info('Received SIGINT. Shutting down gracefully.');
+  new App().stop();
+});
+
+process.on('SIGTERM', () => {
+  logger.info('Received SIGTERM. Shutting down gracefully.');
+  new App().stop();
+});
 
 module.exports = App;

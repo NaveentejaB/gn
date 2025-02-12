@@ -1,4 +1,4 @@
-
+const { v4: uuidv4 } = require('uuid');
 const Sequelize = require('sequelize-cockroachdb')
 
 const {sequelize} = require('../config/DB')
@@ -12,9 +12,9 @@ if (!sequelize) {
 const User = sequelize.define("User", {
     // primary key
     user_id:{
-        type:Sequelize.DataTypes.INTEGER,
-        autoIncrement:true,
-        primaryKey:true
+        type : Sequelize.DataTypes.UUID,
+        defaultValue :Sequelize.UUIDV4,
+        primaryKey : true
     },
     user_name:{
         type:Sequelize.DataTypes.TEXT,
@@ -33,7 +33,6 @@ const User = sequelize.define("User", {
         type:Sequelize.DataTypes.STRING,
         allowNull: false,
     },
-    // foreign key
     user_location:{
         type:Sequelize.DataTypes.STRING,
         allowNull: false,

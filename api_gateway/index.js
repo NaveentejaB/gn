@@ -4,22 +4,28 @@ const httpProxy = require("http-proxy");
 const proxy = httpProxy.createProxyServer();
 const app = express();
 
-// Route requests to the auth service
-// app.use("/auth", (req, res) => {
-//   proxy.web(req, res, { target: "http://auth:3000" });
-// });
-
-// Route requests to the user-management service
+// user-management service
 app.use("/user", (req, res) => {
-  console.log("hello");
-  
   proxy.web(req, res, { target: "http://localhost:3001" });
 });
 
+// notification service
+app.use("/notification", (req, res) => {
+  proxy.web(req, res, { target: "http://localhost:3002" });
+});
 
+// authentication service
+app.use("/auth",(req,res)=>{
+  proxy.web(req,res,{target : "http://localhost:3003"})
+})
+
+// initiative service
+app.use("/initiative",(req,res) => {
+  proxy.web(req,res,{target:"http://localhost:3004"})
+})
 
 // Start the server
-const port = process.env.PORT || 3003;
+const port = process.env.PORT || 4000;
 app.listen(port, () => {
   console.log(`API Gateway listening on port ${port}`);
 });

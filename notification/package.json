@@ -9,11 +9,13 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@vonage/server-sdk": "^3.19.2",
     "amqplib": "^0.10.4",
     "bcrypt": "^5.1.1",
     "body-parser": "^1.20.2",
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
+    "ioredis": "^5.4.1",
     "is-port-available": "^0.1.5",
     "jsonwebtoken": "^9.0.2",
     "nodemailer": "^6.9.14",

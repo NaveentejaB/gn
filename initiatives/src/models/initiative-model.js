@@ -12,13 +12,18 @@ if (!sequelize) {
 const Initiative = sequelize.define("Initiative", {
     // primary key
     initiative_id:{
-        type:Sequelize.DataTypes.INTEGER,
-        autoIncrement:true,
-        primaryKey:true
+        type : Sequelize.DataTypes.UUID,
+        defaultValue :Sequelize.UUIDV4,
+        primaryKey : true
     },
     organizer_id:{
-        type:Sequelize.DataTypes.INTEGER,
+        type:Sequelize.DataTypes.UUID,
         allowNull: false
+    },
+    initiative_name : {
+        type:Sequelize.DataTypes.STRING,
+        allowNull: false,
+        unique : true
     },
     max_people:{
         type:Sequelize.DataTypes.INTEGER,
@@ -28,30 +33,35 @@ const Initiative = sequelize.define("Initiative", {
         type:Sequelize.DataTypes.INTEGER,
         allowNull: false
     },
-    initiative_town:{
-        type:Sequelize.DataTypes.STRING,
-        allowNull: false,
-    },
-    // foreign key
     location_id:{
-        type:Sequelize.DataTypes.STRING,
+        type:Sequelize.DataTypes.UUID,
         allowNull: false,
     },
-    date:{
+    initiative_type_id:{
+        type:Sequelize.DataTypes.UUID,
+        allowNull: false,
+    },
+    event_start_date:{
         type:Sequelize.DataTypes.DATEONLY,
         allowNull: false,
     },
-    Created_at : {
-        type:Sequelize.DataTypes.DATE,
+    schedule_type: {
+        type: Sequelize.DataTypes.STRING,
         allowNull: false,
-        defaultValue : Date.now()
+        defaultValue: 'one_time',
+        validate: {
+            isIn: [['one_time', 'recurring']]
+        }
     },
-    Updated_at : {
-        type:Sequelize.DataTypes.DATE,
-        allowNull: false,
-        defaultValue : Date.now()
+    recurring_end_date : {
+        type : Sequelize.DataTypes.DATE,
+        allowNull : true // only for recurring events
     }
-    
+},{
+     timestamps: true,
+
+     createdAt: 'created_at',
+     updatedAt: 'updated_at'
 })
 
 module.exports = Initiative;
